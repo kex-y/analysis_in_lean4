@@ -81,6 +81,12 @@ macro_rules
 | `(∀ $x:ident ∈ $s, $p) => `(∀ $x:ident, $x ∈ $s → $p)
 | `(∃ $x:ident ∈ $s, $p) => `(∃ $x:ident, $x ∈ $s ∧ $p)
 
+def compl (s : Set α) := { x | x ∉ s }
+
+postfix:100 "ᶜ " => compl
+
+theorem compl.def (s : Set α) (x) : x ∈ sᶜ ↔ ¬ s x := Iff.rfl
+
 def Subset (s t : Set α) := ∀ x ∈ s, x ∈ t
 
 infix:50 " ⊆ " => Subset
@@ -91,8 +97,8 @@ namespace Subset
 
 theorem refl {s : Set α} : s ⊆ s := λ _ hx => hx
 
-theorem trans {s t v : Set α} (hst : s ⊆ t) (htv : t ⊆ v) : s ⊆ t := 
-  λ x hx => hst x hx
+theorem trans {s t v : Set α} (hst : s ⊆ t) (htv : t ⊆ v) : s ⊆ v := 
+  λ x hx => htv _ (hst x hx)
 
 theorem antisymm {s t : Set α} (hst : s ⊆ t) (hts : t ⊆ s) : s = t := 
   Set.ext λ x => ⟨ λ hx => hst x hx, λ hx => hts x hx ⟩
@@ -103,7 +109,7 @@ theorem antisymmIff {s t : Set α} : s = t ↔ s ⊆ t ∧ t ⊆ s :=
 
 -- ↓ Uses classical logic
 theorem notSubset : ¬ s ⊆ t ↔ ∃ x ∈ s, x ∉ t := by 
-  apply Iff.intro;
+  apply Iff.intro
   { intro hst; 
     rw Classical.Exists.notAnd;
     apply Classical.notForall;
@@ -127,6 +133,8 @@ def univ : Set α := { x | True }
 
 @[simp] theorem memUniv (x : α) : x ∈ (univ : Set α) := True.intro
 
+theorem Subset.empty (s : Set α) : ∅ ⊆ s := λ _ h => False.elim h
+
 theorem Subset.subsetUniv {s : Set α} : s ⊆ univ := λ x _ => memUniv x 
 
 theorem Subset.univSubsetIff {s : Set α} : univ ⊆ s ↔ univ = s := by
@@ -146,6 +154,11 @@ theorem unionSelf {s : Set α} : s ∪ s = s := by
   extia x
   { intro hx; cases hx; assumption; assumption }
   { exact Or.inl }
+
+theorem interSelf {s : Set α} : s ∩ s = s := by 
+  extia x
+  { intro h; exact h.1 }
+  { intro h; exact ⟨ h, h ⟩}
 
 theorem unionEmpty {s : Set α} : s ∪ ∅ = s := by 
   extia x
@@ -175,5 +188,8 @@ theorem unionAssoc {s t w : Set α} : s ∪ t ∪ w = s ∪ (t ∪ w) := by
     | inr hx   => cases hx with 
       | inr hx => exact Or.inr hx
       | inl hx => exact Or.inl <| Or.inr hx }
+
+theorem subsetInter {s t u : Set α} (ht : s ⊆ t) (hu : s ⊆ u) : s ⊆ t ∩ u := 
+λ x hx => ⟨ ht x hx, hu x hx ⟩
 
 end Set
