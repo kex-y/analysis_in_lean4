@@ -9,7 +9,9 @@ namespace Set
 
 /-! ## Basic Definitions -/
 
-instance : EmptyCollection (Set α) := ⟨λ x => False⟩ 
+def empty : Set α := λ x => False
+
+instance : EmptyCollection (Set α) := ⟨empty⟩ 
 
 variable {α : Type u} {s : Set α}
 
@@ -35,11 +37,38 @@ syntax ident "∈" term : index
 
 -- Notation for sets
 syntax "{" index "|" term "}" : term
+-- syntax "{" term,* "}"  : term
+-- syntax "%{" term,* "|" term "}" : term 
 
 macro_rules 
 | `({ $x:ident : $t | $p }) => `(setOf (λ ($x:ident : $t) => $p))
 | `({ $x:ident | $p }) => `(setOf (λ ($x:ident) => $p))
 | `({ $x:ident ∈ $s | $p }) => `(setOf (λ $x => $x ∈ $s ∧ $p))
+
+def insert (s : Set α) (a : α) : Set α := setOf (λ x => x ∈ s ∨ x = a)
+
+theorem insertMem (s : Set α) {a : α} (ha : a ∈ s) : s.insert a = s := 
+  ext (λ x => Iff.intro (λ hx => match hx with
+    | Or.inl hx => hx | Or.inr hx => hx ▸ ha) (λ hx => Or.inl hx))
+
+-- Temporary notation for singletons
+notation "{ " a " }" => insert ∅ a
+
+theorem memSingleton (a b : α) : b ∈ { a } ↔ b = a := 
+  Iff.intro (λ hb => match hb with 
+    | Or.inl hb => False.elim hb | Or.inr hb => hb) (λ hb => Or.inr hb)
+
+-- macro_rules
+--   | `({ $elems,* }) => do
+--     let rec expandListLit (i : Nat) (skip : Bool) (result : Syntax) : MacroM Syntax := do
+--       match i, skip with
+--       | 0,   _     => pure result
+--       | i+1, true  => expandListLit i false result
+--       | i+1, false => expandListLit i true  (← ``(Set.insert $(elems.elemsAndSeps[i]) $result))
+--     if elems.elemsAndSeps.size < 64 then
+--       expandListLit elems.elemsAndSeps.size false (← ``(Set.empty))
+--     else
+--       `(%{ $elems,* | Set.empty })
 
 def union (s t : Set α) : Set α := { x : α | x ∈ s ∨ x ∈ t } 
 

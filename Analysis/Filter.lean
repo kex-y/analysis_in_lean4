@@ -31,7 +31,18 @@ instance : Coe (Filter α) (Set (Set α)) := ⟨λ F => F.sets⟩
 
 instance : Mem (Set α) (Filter α) := ⟨λ x F => x ∈ (F : Set (Set α))⟩
 
+-- instance : LE (Filter α) := ⟨_⟩
+
 /-! ### Basics -/
+
+theorem eq {F G : Filter α} (h : F.sets = G.sets) : F = G := by
+  cases F; cases G; subst h; rfl
+  
+theorem eqIff {F G : Filter α} : F = G ↔ F.sets = G.sets := 
+Iff.intro (λ h => h ▸ rfl) eq
+
+theorem ext {F G : Filter α} (h : ∀ s, s ∈ F ↔ s ∈ G) : F = G := 
+  eq <| Set.ext h
 
 /-- The intersection of a collection of filters is a filter. -/
 def Inf (𝒞 : Set (Filter α)) : Filter α :=
@@ -107,14 +118,39 @@ class Ultra (F : Filter α) where
 -- theorem existsUltraGe (F : Filter α) [neBot F] : 
 --   ∃ (G : Filter α) [Ultra G], (F : Set (Set α)) ⊆ G := sorry
 
+def map (f : α → β) (F : Filter α) : Filter β := 
+{ sets := preimage (preimage f) F
+  univ_sets := F.univ_sets
+  sets_of_superset := λ hx hxy => F.sets_of_superset hx <| preimageMono f hxy
+  inter_sets := λ hx hy => F.inter_sets hx hy }
+
 /-! ### Convergence -/
 
-/-- Let `F` be a filter and `x : α`. We say `F` tendsto `x` if `𝓟 x ⊆ F`. -/
-def tendstoPointwise (F : Filter α) (x : α) := 
-(𝓟 (setOf λ y => y = x) : Set (Set α)) ⊆ F
+/-- A neighbourhood of `x` is the principal filter of the singleton set `{x}`-/
+def neighbourhood (x : α) : Filter α := 𝓟 {x}
+
+notation:100 "𝓝 " x => 𝓟 {x}
+
+def eventually (p : α → Prop) (F : Filter α) := p ∈ F
+
+theorem ext' {F G : Filter α} (h : ∀ p, eventually p F ↔ eventually p G) : 
+  F = G := 
+Filter.ext h
+
+/-- A filter `l₁` tendsto another filter `l₂` along some function `f` if the 
+map of `l₁` along `f` is smaller than `l₂`. -/
+def tendsto (f : α → β) (l₁ : Filter α) (l₂ : Filter β) := 
+(l₁.map f : Set (Set β)) ⊆ l₂
+-- preimage (preimage f) F ⊆ l₂
+-- s ∈ preimage (preimage f) F → s ∈ l₂ 
+-- s.preimage f ∈ F → s ∈ l₂
+
+theorem tendstoDef {f : α → β} {l₁ : Filter α} {l₂ : Filter β} :
+  tendsto f l₁ l₂ ↔ ∀ (s : Set β) (hs : s.preimage f ∈ l₁), s ∈ l₂ := Iff.rfl
+--   tendsto f l₁ l₂ ↔ ∀ s ∈ l₂, s.preimage f ∈ l₁ := 
+-- Iff.intro (λ h s hs => _) _
 
 #exit
-
 
 -- Let X be a Hausdorff space
 variables {X : Type*} [topological_space X]
