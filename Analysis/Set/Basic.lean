@@ -81,11 +81,11 @@ theorem interDef (s t : Set α) : inter s t = λ x => s x ∧ t x := rfl
 infix:60 " ∪ " => Set.union
 infix:60 " ∩ " => Set.inter
 
-def Union [h : Coe β (Set α)] (s : Set β) : Set α := 
-  { x : α | ∃ t : β, t ∈ s ∧ (t : Set α) x }
+def Union {base} [h : Coe β (Set base)] (s : Set β) : Set base := 
+  { x | ∃ t : β, t ∈ s ∧ (t : Set base) x }
 
-def Inter [h : Coe β (Set α)] (s : Set β) : Set α := 
-  { x : α | ∀ t : β, t ∈ s → (t : Set α) x }
+def Inter {base} [h : Coe β (Set base)] (s : Set β) : Set base := 
+  { x | ∀ t : β, t ∈ s → (t : Set base) x }
 
 def UnionDef [h : Coe β (Set α)] (s : Set β) : Union s = 
   λ x => ∃ t : β, t ∈ s ∧ (t : Set α) x := rfl
@@ -117,6 +117,8 @@ postfix:100 "ᶜ " => compl
 theorem compl.def (s : Set α) (x) : x ∈ sᶜ ↔ ¬ s x := Iff.rfl
 
 def Subset (s t : Set α) := ∀ x ∈ s, x ∈ t
+
+instance : HasLessEq (Set α) := ⟨Subset⟩ 
 
 infix:50 " ⊆ " => Subset
 
@@ -202,7 +204,7 @@ theorem unionSymm {s t : Set α} : s ∪ t = t ∪ s := by
              | inl hx => exact Or.inr hx
              | inr hx => exact Or.inl hx }
 
-theorem emptyUnion {s : Set α} : ∅ ∪ s = s := by 
+theorem emptyunion {s : Set α} : ∅ ∪ s = s := by 
   rw unionSymm; exact unionEmpty
 
 theorem unionAssoc {s t w : Set α} : s ∪ t ∪ w = s ∪ (t ∪ w) := by 
@@ -220,5 +222,8 @@ theorem unionAssoc {s t w : Set α} : s ∪ t ∪ w = s ∪ (t ∪ w) := by
 
 theorem subsetInter {s t u : Set α} (ht : s ⊆ t) (hu : s ⊆ u) : s ⊆ t ∩ u := 
 λ x hx => ⟨ ht x hx, hu x hx ⟩
+
+theorem UnionEmpty : Union (base := α) (∅ : Set (Set α)) = ∅ := 
+  ext (λ x => Iff.intro (λ ⟨_, h⟩ => False.elim h.1) (λ h => False.elim h))
 
 end Set

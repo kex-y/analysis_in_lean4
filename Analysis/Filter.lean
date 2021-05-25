@@ -31,7 +31,7 @@ instance : Coe (Filter α) (Set (Set α)) := ⟨λ F => F.sets⟩
 
 instance : Mem (Set α) (Filter α) := ⟨λ x F => x ∈ (F : Set (Set α))⟩
 
--- instance : LE (Filter α) := ⟨_⟩
+instance : HasLessEq (Filter α) := ⟨λ F G => (G : Set (Set α)) ≤ F⟩
 
 /-! ### Basics -/
 
@@ -56,7 +56,7 @@ def Inf (𝒞 : Set (Filter α)) : Filter α :=
 /-- The filter generated from `S`, a set of sets of `α` is the Inf of all filters 
   containing `S` -/
 def generatedFrom (S : Set (Set α)) : Filter α := 
-  Inf { F : Filter α | S ⊆ (F : Set (Set α)) }
+  Inf { F : Filter α | S ⊆ F }
 
 -- The method above generates the smallest filter that contains `S : set (set α)`
 -- On the other hand, we can generate a filter using `s : set α` be letting the 
@@ -133,22 +133,23 @@ notation:100 "𝓝 " x => 𝓟 {x}
 
 def eventually (p : α → Prop) (F : Filter α) := p ∈ F
 
-theorem ext' {F G : Filter α} (h : ∀ p, eventually p F ↔ eventually p G) : 
+theorem eventually.ext {F G : Filter α} (h : ∀ p, eventually p F ↔ eventually p G) : 
   F = G := 
 Filter.ext h
 
+theorem eventually.filter_mono {F G : Filter α} (h : F ≤ G) {p : α → Prop}
+  (hG : eventually p G) : eventually p F := h _ hG
+
 /-- A filter `l₁` tendsto another filter `l₂` along some function `f` if the 
 map of `l₁` along `f` is smaller than `l₂`. -/
-def tendsto (f : α → β) (l₁ : Filter α) (l₂ : Filter β) := 
-(l₁.map f : Set (Set β)) ⊆ l₂
--- preimage (preimage f) F ⊆ l₂
--- s ∈ preimage (preimage f) F → s ∈ l₂ 
--- s.preimage f ∈ F → s ∈ l₂
+def tendsto (f : α → β) (l₁ : Filter α) (l₂ : Filter β) := l₁.map f ≤ l₂
 
 theorem tendstoDef {f : α → β} {l₁ : Filter α} {l₂ : Filter β} :
-  tendsto f l₁ l₂ ↔ ∀ (s : Set β) (hs : s.preimage f ∈ l₁), s ∈ l₂ := Iff.rfl
---   tendsto f l₁ l₂ ↔ ∀ s ∈ l₂, s.preimage f ∈ l₁ := 
--- Iff.intro (λ h s hs => _) _
+  tendsto f l₁ l₂ ↔ ∀ s ∈ l₂, s.preimage f ∈ l₁ := Iff.rfl
+
+theorem tendsto_iff_eventually {f : α → β} {l₁ : Filter α} {l₂ : Filter β} :
+  tendsto f l₁ l₂ ↔ ∀ {p : β → Prop} (hp : eventually p l₂), eventually (p ∘ f) l₁ :=
+Iff.rfl
 
 #exit
 
