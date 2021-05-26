@@ -27,4 +27,6 @@ theorem preimageMono (f : α → β) {s t : Set β} (hst : s ⊆ t) :
 theorem preimageInter (f : α → β) (s t : Set β) : 
   (s ∩ t).preimage f = s.preimage f ∩ t.preimage f := rfl
 
+theorem preimageId (s : Set α) : preimage id s = s := rfl
+
 end Set

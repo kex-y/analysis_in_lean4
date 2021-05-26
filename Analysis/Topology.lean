@@ -27,7 +27,7 @@ topologicalSpace.is_open_Union s hs
 
 namespace topologicalSpace
 
-open Set
+open Set Filter
 
 theorem ext (π τ : topologicalSpace α) (h : π.is_open = τ.is_open) : π = τ := by 
   cases π; cases τ; subst h; rfl
@@ -46,5 +46,52 @@ but is expected to have type
   is_open (Union EmptyCollection.emptyCollection)
 -/
 
+class Hausdorff (α : Type u) [topologicalSpace α] where
+  t2 : ∀ (x y : α) (hxy : x ≠ y), 
+    ∃ u v : Set α, is_open u ∧ is_open v ∧ x ∈ u ∧ y ∈ v ∧ u ∩ v = ∅ 
+
+section Hausdorff
+
+variable [Hausdorff α]
+
+theorem t2 (x y : α) (hxy : x ≠ y) : 
+  ∃ u v : Set α, is_open u ∧ is_open v ∧ x ∈ u ∧ y ∈ v ∧ u ∩ v = ∅ := 
+Hausdorff.t2 x y hxy
+
+-- /-- A filter `F` on a Hausdorff space `X` has at most one limit -/
+theorem tendstoUnique {x y : α} {F : Filter α} [H : neBot F] 
+  (hx : F ⟶ x) (hy : F ⟶ y) : x = y := by
+  apply Classical.byContradiction 
+  intro h
+  cases t2 x y h with | Exists.intro u huv =>
+  cases huv      with | Exists.intro v huv =>
+  let ⟨hu₁, ⟨hv₁, ⟨hu₂, ⟨hv₂, huv⟩⟩⟩⟩ := huv
+  exact H.ne_bot <| (eqBotIff F).2 <| huv ▸ inter_sets _ 
+    (preimageId u ▸ hx u ((memNeighbourhoodIff x u).2 hu₂)) 
+    (preimageId v ▸ hy v ((memNeighbourhoodIff y v).2 hv₂))
+
+def aux (x y : α) : Filter α := 
+  generatedFrom ((𝓝 x) ⊓ 𝓝 y)
+
+-- theorem auxTendsto (x y : α) : aux x y ⟶ x := by 
+--   rw tendstoNeighberhoodIff
+--   intro z hz
+--   apply leGeneratedFrom ((𝓝 x) ⊓ 𝓝 y)
+--   skip; admit
+
+def HausdorffOfTendstoUnique 
+  (hF : ∀ {F : Filter α} x y (hy : F ⟶ y) (hx : F ⟶ x), x = y) : 
+  Hausdorff α := 
+{ t2 := by 
+    intros x y hxy
+    apply Classical.byContradiction
+    admit
+    -- intro h
+    -- apply hxy
+    -- apply hF
+    -- skip; admit
+ }
+
+end Hausdorff
 
 end topologicalSpace

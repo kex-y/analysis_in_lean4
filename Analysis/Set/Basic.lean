@@ -54,6 +54,8 @@ theorem insertMem (s : Set α) {a : α} (ha : a ∈ s) : s.insert a = s :=
 -- Temporary notation for singletons
 notation "{ " a " }" => insert ∅ a
 
+theorem memSelfSingleton (a : α) : a ∈ { a } := Or.inr rfl
+
 theorem memSingleton (a b : α) : b ∈ { a } ↔ b = a := 
   Iff.intro (λ hb => match hb with 
     | Or.inl hb => False.elim hb | Or.inr hb => hb) (λ hb => Or.inr hb)
@@ -171,6 +173,13 @@ theorem Subset.subsetUniv {s : Set α} : s ⊆ univ := λ x _ => memUniv x
 theorem Subset.univSubsetIff {s : Set α} : univ ⊆ s ↔ univ = s := by
   apply Iff.intro λ hs => Subset.antisymm hs Subset.subsetUniv 
   { intro h; subst h; exact Subset.refl }
+
+theorem Subset.singletonIff {s : Set α} : x ∈ s ↔ { x } ⊆ s := 
+  Iff.intro 
+    (λ h y hy => match hy with 
+      | Or.inl hy => False.elim hy
+      | Or.inr hy => hy ▸ h) 
+    (λ h => h _ <| memSelfSingleton _)
 
 theorem eqUnivIff {s : Set α} : s = univ ↔ ∀ x, x ∈ s := by 
   apply Iff.intro 
