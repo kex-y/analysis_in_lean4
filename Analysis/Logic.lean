@@ -25,7 +25,7 @@ theorem notNot {p : Prop} : ¬ ¬ p ↔ p := by
   { exact λ hp hnp => False.elim <| hnp hp }
 
 theorem notForall {p : α → Prop} : (¬ ∀ x, p x) → ∃ x, ¬ p x := by 
-  { apply contrapositive; intro hx; rw notNot; intro x;
+  { apply contrapositive; intro hx; rw [notNot]; intro x;
     cases em (p x); { assumption }
       { apply False.elim <| hx <| Exists.intro x _; assumption } }  
 
@@ -33,7 +33,7 @@ theorem notAnd {p q : Prop} : p ∧ ¬ q ↔ ¬ (p → q) := by
   apply Iff.intro
   { exact λ h himp => h.2 <| himp h.1 }
   { intro h; apply And.intro;
-    { revert h; apply contrapositive; rw notNot;
+    { revert h; apply contrapositive; rw [notNot];
       exact λ hnp hp => False.elim <| hnp hp }
     { exact λ hq => h <| λ _ => hq } }
 

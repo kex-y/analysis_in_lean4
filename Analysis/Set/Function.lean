@@ -10,9 +10,6 @@ theorem memImage {s : Set α} {f : α → β} (y : β) :
 theorem memImageOfMem {s : Set α} {f : α → β} {x : α} (hx : x ∈ s) : 
   f x ∈ s.image f := Exists.intro x ⟨hx, rfl⟩
 
-instance [f : Coe α β] : Coe (Set α) (Set β) := 
-  ⟨λ S => { y | y ∈ S.image f.coe }⟩
-
 def preimage (f : α → β) (s : Set β) : Set α := { x : α | f x ∈ s }
 
 theorem memPreimage {s : Set β} {f : α → β} {x : α} : 

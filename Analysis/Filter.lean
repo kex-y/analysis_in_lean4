@@ -32,9 +32,14 @@ instance : Coe (Filter α) (Set (Set α)) := ⟨λ F => F.sets⟩
 
 instance : Mem (Set α) (Filter α) := ⟨λ x F => x ∈ (F : Set (Set α))⟩
 
-instance : HasLessEq (Filter α) := ⟨λ F G => (G : Set (Set α)) ≤ F⟩
+instance : LE (Filter α) := ⟨λ F G => (G : Set (Set α)) ≤ F⟩
 
 /-! ### Basics -/
+
+theorem memIff {F : Filter α} {s : Set α} : s ∈ F.sets ↔ s ∈ F := Iff.rfl
+
+theorem LERefl (F : Filter α) : F ≤ F := 
+  λ _ hs => hs
 
 theorem eq {F G : Filter α} (h : F.sets = G.sets) : F = G := by
   cases F; cases G; subst h; rfl
@@ -134,13 +139,15 @@ class Ultra (F : Filter α) where
 -- In Lean 3 mathlib its known as `exists_maximal_of_chains_bounded`
 
 -- theorem existsUltraGe (F : Filter α) [neBot F] : 
---   ∃ (G : Filter α) [Ultra G], (F : Set (Set α)) ⊆ G := sorry
 
 def map (f : α → β) (F : Filter α) : Filter β := 
 { sets := preimage (preimage f) F
   univ_sets := F.univ_sets
   sets_of_superset := λ hx hxy => F.sets_of_superset hx <| preimageMono f hxy
   inter_sets := λ hx hy => F.inter_sets hx hy }
+
+theorem memMap {f : α → β} {F : Filter α} (t : Set β) : 
+  t ∈ F.map f ↔ (preimage f) t ∈ F := Iff.rfl
 
 /-! ### Convergence -/
 
@@ -179,63 +186,28 @@ theorem tendstoIffEventually {f : α → β} {l₁ : Filter α} {l₂ : Filter �
   tendsto f l₁ l₂ ↔ ∀ {p : β → Prop} (hp : eventually p l₂), eventually (p ∘ f) l₁ :=
 Iff.rfl
 
+theorem tendstoRefl (F : Filter α) : tendsto id F F := LERefl F
+
+def filterImage (f : α → β) (F : Filter α) : Filter β := 
+  generatedFrom <| Set.image (λ s : Set α => s.image f) F
+
+theorem memFilterImageIff {f : α → β} {F : Filter α} (V : Set β) : 
+  V ∈ map f F ↔ ∃ U ∈ F, U.image f ⊆ V := by
+  apply Iff.intro
+  { intro h;
+    apply Exists.intro (preimage f V);
+    apply And.intro h;
+    intro x hx;
+    rw [memImage] at hx;
+    exact hx.2.2 ▸ hx.2.1 }
+  { intro h;
+    let ⟨U, hU, hU'⟩ := h;
+    rw [memMap];
+    exact F.sets_of_superset hU λ x hx => hU' _ <| Exists.intro x ⟨hx, rfl⟩ }
+
 #exit
 
--- Let X be a Hausdorff space
-variables {X : Type*} [topological_space X]
-
-/-- A filter `F` on a Hausdorff space `X` has at most one limit -/
-theorem tendsto_unique {x y : X} {F : filter X} [H : ne_bot F] [t2_space X]
-  (hFx : tendsto id F (nhds x)) 
-  (hFy : tendsto id F (nhds y)) : x = y :=
-begin
-  by_contra hneq,
-  rcases t2_space.t2 _ _ hneq with ⟨U, V, hU, hV, hxU, hyV, hdisj⟩,
-  apply H, rw [←empty_in_sets_eq_bot, ←hdisj],
-  refine F.inter_sets _ _,
-    { rw ←@preimage_id _ U,
-      exact tendsto_def.1 hFx U (mem_nhds_sets hU hxU) },
-    { rw ←@preimage_id _ V,
-      exact tendsto_def.1 hFy V (mem_nhds_sets hV hyV) }
-end
-
 variables {Y : Type*} [topological_space Y]
-
-@[reducible] def filter_image (f : X → Y) (F : filter X) : filter Y := 
-  generate $ (λ s : set X, f '' s) '' F
-
--- We'll use mathlib's `generate` and `map` which are the same 
--- as the ones we've defined but there is more APIs to work with
-
-/-- A filter `F : filter X` is said to converge to some `x : X` if `nhds x ⊆ F` -/
-@[reducible] private def converge_to (F : filter X) (x : X) : Prop := 
-  (nhds x : set (set X)) ⊆ F
-
--- This definition is equivalent to `tendsto id F (nhds x)`
-private lemma converge_to_iff (F : filter X) (x : X) : 
-  converge_to F x ↔ tendsto id F (nhds x) :=
-begin
-  refine ⟨λ h, tendsto_def.1 $ λ s hs, _, λ h, _⟩,
-    { rw map_id, simpa using h hs },
-    { simp_rw [tendsto_def, preimage_id] at h, exact h }
-end
-
-/-- The neighbourhood filter of `x` converges to `x` -/
-lemma nhds_tendsto (x : X) : tendsto id (nhds x) (nhds x) := 
-λ U hU, by rwa map_id
-
-lemma mem_filter_image_iff {f : X → Y} {F : filter X} (V) : 
-  V ∈ map f F ↔ ∃ U ∈ F, f '' U ⊆ V :=
-begin
-  refine ⟨λ h, ⟨_, h, image_preimage_subset _ _⟩, λ h, _⟩,
-    rcases h with ⟨U, hU₀, hU₁⟩,
-    rw mem_map,
-    apply F.sets_of_superset hU₀,
-    intros u hu,
-    rw mem_set_of_eq,
-    apply hU₁, rw mem_image,
-    exact ⟨u, hu, rfl⟩    
-end
 
 lemma nhds_subset_filter_of_tendsto {x : X} {F : filter X} 
   (hF : tendsto id F (nhds x)) : (nhds x : set (set X)) ⊆ F :=

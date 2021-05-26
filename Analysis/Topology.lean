@@ -34,17 +34,10 @@ theorem ext (π τ : topologicalSpace α) (h : π.is_open = τ.is_open) : π = �
 
 variable [topologicalSpace α]
 
-theorem is_openEmpty : is_open (∅ : Set α) := sorry
--- UnionEmpty ▸ is_open_Union ∅ (λ _ h => False.elim h)
-/- ???
-type mismatch
-  is_open_Union EmptyCollection.emptyCollection
-    fun (x : Set α) (h : x ∈ EmptyCollection.emptyCollection) => False.elim h
-has type
-  is_open (Union EmptyCollection.emptyCollection)
-but is expected to have type
-  is_open (Union EmptyCollection.emptyCollection)
--/
+set_option pp.all true
+
+theorem is_openEmpty : is_open (∅ : Set α) := 
+UnionEmpty ▸ is_open_Union ∅ (λ _ h => False.elim h)
 
 class Hausdorff (α : Type u) [topologicalSpace α] where
   t2 : ∀ (x y : α) (hxy : x ≠ y), 
@@ -58,39 +51,42 @@ theorem t2 (x y : α) (hxy : x ≠ y) :
   ∃ u v : Set α, is_open u ∧ is_open v ∧ x ∈ u ∧ y ∈ v ∧ u ∩ v = ∅ := 
 Hausdorff.t2 x y hxy
 
--- /-- A filter `F` on a Hausdorff space `X` has at most one limit -/
+/-- A filter `F` on a Hausdorff space `X` has at most one limit -/
 theorem tendstoUnique {x y : α} {F : Filter α} [H : neBot F] 
   (hx : F ⟶ x) (hy : F ⟶ y) : x = y := by
   apply Classical.byContradiction 
   intro h
-  cases t2 x y h with | Exists.intro u huv =>
-  cases huv      with | Exists.intro v huv =>
+  cases t2 x y h with | intro u huv =>
+  cases huv      with | intro v huv =>
   let ⟨hu₁, ⟨hv₁, ⟨hu₂, ⟨hv₂, huv⟩⟩⟩⟩ := huv
   exact H.ne_bot <| (eqBotIff F).2 <| huv ▸ inter_sets _ 
     (preimageId u ▸ hx u ((memNeighbourhoodIff x u).2 hu₂)) 
     (preimageId v ▸ hy v ((memNeighbourhoodIff y v).2 hv₂))
 
+/-- The filter generate by the union of two neighbourhoods. -/
 def aux (x y : α) : Filter α := 
-  generatedFrom ((𝓝 x) ⊓ 𝓝 y)
+  generatedFrom ((𝓝 x) ∪ 𝓝 y)
 
--- theorem auxTendsto (x y : α) : aux x y ⟶ x := by 
---   rw tendstoNeighberhoodIff
---   intro z hz
---   apply leGeneratedFrom ((𝓝 x) ⊓ 𝓝 y)
---   skip; admit
+theorem auxTendstoLeft (x y : α) : aux x y ⟶ x := by 
+  rw [tendstoNeighberhoodIff]
+  intro z hz
+  apply leGeneratedFrom ((𝓝 x) ∪ 𝓝 y) z
+  rw [memIff, memPrincipalIff] at hz
+  exact Or.inl <| Filter.sets_of_superset _ (selfMemPrincipal _) hz
 
+theorem auxTendstoRight (x y : α) : aux x y ⟶ y := by 
+  rw [tendstoNeighberhoodIff]
+  intro z hz
+  apply leGeneratedFrom ((𝓝 x) ∪ 𝓝 y) z
+  rw [memIff, memPrincipalIff] at hz
+  exact Or.inr <| Filter.sets_of_superset _ (selfMemPrincipal _) hz
+
+/-- A topological space is Hausdorff if all filter `F` has a unique limit. -/
 def HausdorffOfTendstoUnique 
-  (hF : ∀ {F : Filter α} x y (hy : F ⟶ y) (hx : F ⟶ x), x = y) : 
+  (hF : ∀ (F : Filter α) x y (hy : F ⟶ y) (hx : F ⟶ x), x = y) : 
   Hausdorff α := 
-{ t2 := by 
-    intros x y hxy
-    apply Classical.byContradiction
-    admit
-    -- intro h
-    -- apply hxy
-    -- apply hF
-    -- skip; admit
- }
+{ t2 := λ x y hxy => False.elim <| hxy <| 
+  hF (aux x y) x y (auxTendstoRight x y) (auxTendstoLeft x y) }
 
 end Hausdorff
 

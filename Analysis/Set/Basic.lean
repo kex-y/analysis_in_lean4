@@ -1,5 +1,5 @@
+import Analysis.Pre
 import Analysis.Logic 
-import Analysis.Prelude
 
 def Set (α : Type u) := α → Prop
 
@@ -32,11 +32,11 @@ theorem ext {s t : Set α} (h : ∀ x, x ∈ s ↔ x ∈ t) : s = t :=
 -- Declaring the index category
 declare_syntax_cat index
 syntax ident : index
-syntax ident ":" term : index 
-syntax ident "∈" term : index
+syntax ident " : " term : index 
+syntax ident " ∈ " term : index
 
 -- Notation for sets
-syntax "{" index "|" term "}" : term
+syntax "{ " index " | " term " }" : term
 -- syntax "{" term,* "}"  : term
 -- syntax "%{" term,* "|" term "}" : term 
 
@@ -112,6 +112,13 @@ macro_rules
 | `(∀ $x:ident ∈ $s, $p) => `(∀ $x:ident, $x ∈ $s → $p)
 | `(∃ $x:ident ∈ $s, $p) => `(∃ $x:ident, $x ∈ $s ∧ $p)
 
+-- @[appUnexpander Set.setOf]
+-- def setOf.unexpander : Lean.PrettyPrinter.Unexpander 
+-- | `(setOf (λ ($x:ident : $t) => $p)) => `({ $x | $p })
+-- | _ => throw ()
+
+-- #check { x | x = 1 }
+
 def compl (s : Set α) := { x | x ∉ s }
 
 postfix:100 "ᶜ " => compl
@@ -120,7 +127,7 @@ theorem compl.def (s : Set α) (x) : x ∈ sᶜ ↔ ¬ s x := Iff.rfl
 
 def Subset (s t : Set α) := ∀ x ∈ s, x ∈ t
 
-instance : HasLessEq (Set α) := ⟨Subset⟩ 
+instance : LE (Set α) := ⟨Subset⟩ 
 
 infix:50 " ⊆ " => Subset
 
@@ -144,7 +151,7 @@ theorem antisymmIff {s t : Set α} : s = t ↔ s ⊆ t ∧ t ⊆ s :=
 theorem notSubset : ¬ s ⊆ t ↔ ∃ x ∈ s, x ∉ t := by 
   apply Iff.intro
   { intro hst; 
-    rw Classical.Exists.notAnd;
+    rw [Classical.Exists.notAnd];
     apply Classical.notForall;
     exact λ h => hst λ x hx => h x hx }
   { intro h hst;
@@ -214,9 +221,9 @@ theorem unionSymm {s t : Set α} : s ∪ t = t ∪ s := by
              | inr hx => exact Or.inl hx }
 
 theorem emptyunion {s : Set α} : ∅ ∪ s = s := by 
-  rw unionSymm; exact unionEmpty
+  rw [unionSymm]; exact unionEmpty
 
-theorem unionAssoc {s t w : Set α} : s ∪ t ∪ w = s ∪ (t ∪ w) := by 
+theorem unionAssoc {s t w : Set α} : (s ∪ t) ∪ w = s ∪ (t ∪ w) := by 
   extia x
   { intro hx; cases hx with 
     | inr hx   => exact Or.inr <| Or.inr hx
